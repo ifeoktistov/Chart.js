@@ -282,7 +282,7 @@ window.Chart = function(context){
                 font:"10px Arial",
                 clickHandler: {
                     enable: false,
-                    canvasWrapper: canvasWrapper,
+                    canvasWrapper: null,
                     onClick: function(e){
                         console.log(e);
                     }
@@ -767,10 +767,10 @@ window.Chart = function(context){
 		}
 
         //click and mousemove handler
-        if (config.percentHints.clickHandler.enable) {
+        if (config.percentHints.show && config.percentHints.clickHandler.enable) {
             config.percentHints.clickHandler.canvasWrapper.addEventListener('mousemove', mouseMoveListener, false);
             config.percentHints.clickHandler.canvasWrapper.addEventListener('click', clickListener, false);
-        }
+        };
 
 		animationLoop(config,null,drawPieSegments,ctx);
 
