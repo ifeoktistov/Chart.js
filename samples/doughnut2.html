@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Doughnut Chart</title>
+		<script src="../Chart.js"></script>
+		<meta name = "viewport" content = "initial-scale = 1, user-scalable = no">
+		<style>
+			canvas{
+			}
+            @font-face {
+                font-family: 'museo_sans_cyrl500';
+                src: url('museosanscyrl-500.eot');
+                src: url('museosanscyrl-500.eot?#iefix') format('embedded-opentype'),
+                url('museosanscyrl-500.woff') format('woff'),
+                url('museosanscyrl-500.ttf') format('truetype'),
+                url('museosanscyrl-500.svg#museo_sans_cyrl500') format('svg');
+                font-weight: normal;
+                font-style: normal;
+            }
+		</style>
+	</head>
+	<body>
+		<canvas id="canvas" height="230" width="230"></canvas>
+
+        <script>
+            var doughnutData = [
+                    {
+                        value: 30,
+                        color:"#F7464A"
+                    },
+                    {
+                        value : 50,
+                        color : "#46BFBD"
+                    },
+                    {
+                        value : 100,
+                        color : "#FDB45C"
+                    },
+                    {
+                        value : 40,
+                        color : "#949FB1"
+                    },
+                    {
+                        value : 120,
+                        color : "#4D5360"
+                    }
+                ];
+
+            var canvasWrapper = document.getElementById("canvas");
+            var el = canvasWrapper.getContext("2d");
+
+            var myDoughnut = new Chart(el).Doughnut(
+                doughnutData,
+                {
+                    percentageInnerCutout: 77,
+                    percentageInnerShadow: 33,
+                    segmentShowStroke: false,
+                    percentHints:{
+                        show: true,
+                        startFromPercent: 33,
+                        radius: 12,
+                        font: "12px museo_sans_cyrl500",
+                        clickHandler: {
+                            enable: true,
+                            canvasWrapper: canvasWrapper,
+                            onClick: function(e){
+                                console.log(e);
+                            }
+                        }
+                    }
+                }
+            );
+        </script>
+	</body>
+</html>

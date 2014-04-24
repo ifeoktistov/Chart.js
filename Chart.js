@@ -273,7 +273,21 @@ window.Chart = function(context){
 			animationEasing : "easeOutBounce",
 			animateRotate : true,
 			animateScale : false,
-			onAnimationComplete : null
+			onAnimationComplete : null,
+            percentageInnerShadow : 0,
+            percentHints:{
+                show: false,
+                startFromPercent: 33,
+                radius: 12,
+                font:"10px Arial",
+                clickHandler: {
+                    enable: false,
+                    canvasWrapper: canvasWrapper,
+                    onClick: function(e){
+                        console.log(e);
+                    }
+                }
+            }
 		};		
 
 		var config = (options)? mergeChartConfig(chart.Doughnut.defaults,options) : chart.Doughnut.defaults;
@@ -737,25 +751,39 @@ window.Chart = function(context){
 	}
 
 	var Doughnut = function(data,config,ctx){
-		var segmentTotal = 0;
-		
+		var segmentTotal = 0,
+            helperCircleCoordinates = {};
+
 		//In case we have a canvas that is not a square. Minus 5 pixels as padding round the edge.
-		var doughnutRadius = Min([height/2,width/2]) - 5;
-		
+		var doughnutRadius = Min([height/2,width/2]) - 3;
+        if (config.percentHints.show){
+            doughnutRadius-=config.percentHints.radius;
+        }
+
 		var cutoutRadius = doughnutRadius * (config.percentageInnerCutout/100);
-		
+
 		for (var i=0; i<data.length; i++){
 			segmentTotal += data[i].value;
 		}
-		
-		
+
+        //click and mousemove handler
+        if (config.percentHints.clickHandler.enable) {
+            config.percentHints.clickHandler.canvasWrapper.addEventListener('mousemove', mouseMoveListener, false);
+            config.percentHints.clickHandler.canvasWrapper.addEventListener('click', clickListener, false);
+        }
+
 		animationLoop(config,null,drawPieSegments,ctx);
-		
-		
+
+
 		function drawPieSegments (animationDecimal){
 			var cumulativeAngle = -Math.PI/2,
-			scaleAnimation = 1,
-			rotateAnimation = 1;
+                scaleAnimation = 1,
+                rotateAnimation = 1,
+                segmentAngle,
+                textPercent,
+                radiusMax,
+                radiusMin;
+
 			if (config.animation) {
 				if (config.animateScale) {
 					scaleAnimation = animationDecimal;
@@ -764,15 +792,93 @@ window.Chart = function(context){
 					rotateAnimation = animationDecimal;
 				}
 			}
+
 			for (var i=0; i<data.length; i++){
-				var segmentAngle = rotateAnimation * ((data[i].value/segmentTotal) * (Math.PI*2));
+				segmentAngle = rotateAnimation * ((data[i].value/segmentTotal) * (Math.PI*2));
+
+                radiusMax = scaleAnimation * doughnutRadius;
+                radiusMin = scaleAnimation * cutoutRadius;
+
+                // base color
 				ctx.beginPath();
-				ctx.arc(width/2,height/2,scaleAnimation * doughnutRadius,cumulativeAngle,cumulativeAngle + segmentAngle,false);
-				ctx.arc(width/2,height/2,scaleAnimation * cutoutRadius,cumulativeAngle + segmentAngle,cumulativeAngle,true);
+				ctx.arc(
+                    width/2,
+                    height/2,
+                    radiusMin,
+                    cumulativeAngle,
+                    cumulativeAngle + segmentAngle,
+                    false
+                );
+				ctx.arc(
+                    width/2,
+                    height/2,
+                    radiusMax,
+                    cumulativeAngle + segmentAngle,
+                    cumulativeAngle,
+                    true
+                );
 				ctx.closePath();
 				ctx.fillStyle = data[i].color;
 				ctx.fill();
-				
+
+                if (config.percentHints.show){ // clear coordinates
+                    helperCircleCoordinates[i] = {};
+                }
+
+                if (config.percentHints.show && animationDecimal > (config.percentHints.startFromPercent/100)) {
+                    helperCircleCoordinates[i].X = radiusMax * Math.cos(cumulativeAngle + segmentAngle/2) + width/2;
+                    helperCircleCoordinates[i].Y = radiusMax * Math.sin(cumulativeAngle + segmentAngle/2) + height/2;
+
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.beginPath();
+                    ctx.arc(helperCircleCoordinates[i].X, helperCircleCoordinates[i].Y, config.percentHints.radius, 0, 2*Math.PI);
+                    ctx.strokeStyle = data[i].color;
+                    ctx.lineWidth = 3;
+                    //ctx.style.cursor = 'pointer';
+                    ctx.stroke();
+                    ctx.fill();
+
+                    //text
+                    //todo http://habrahabr.ru/post/140235/
+                    textPercent = Math.ceil((data[i].value/segmentTotal*animationDecimal)*100)+"%";
+                    ctx.fillStyle = data[i].color;
+                    ctx.font = config.percentHints.font;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(
+                        textPercent,
+                        helperCircleCoordinates[i].X,
+                        helperCircleCoordinates[i].Y
+                    );
+                }
+
+
+                if (config.percentageInnerShadow) {
+                    // gray color
+                    ctx.beginPath();
+                    ctx.arc(
+                        width/2,
+                        height/2,
+                        radiusMin + ((radiusMax-radiusMin) * (config.percentageInnerShadow/100)),
+                        cumulativeAngle,
+                        cumulativeAngle + segmentAngle,
+                        false
+                    );
+
+                    ctx.arc(
+                        width/2,
+                        height/2,
+                        radiusMin,
+                        cumulativeAngle + segmentAngle,
+                        cumulativeAngle,
+                        true
+                    );
+
+                    ctx.closePath();
+                    ctx.fillStyle = "rgba(0,0,0,0.2)";
+                    ctx.fill();
+                }
+
 				if(config.segmentShowStroke){
 					ctx.lineWidth = config.segmentStrokeWidth;
 					ctx.strokeStyle = config.segmentStrokeColor;
@@ -780,10 +886,58 @@ window.Chart = function(context){
 				}
 				cumulativeAngle += segmentAngle;
 			}			
-		}			
-		
-		
-		
+		}
+
+        function getHelperCircleByCoordinates(x, y){
+            var cx,cy;
+
+            for(var cc in helperCircleCoordinates){
+                if (typeof helperCircleCoordinates[cc].X != "undefined"){
+                    cx = helperCircleCoordinates[cc].X;
+                    cy = helperCircleCoordinates[cc].Y;
+
+                    if (Math.sqrt(Math.pow((cx-x),2) + Math.pow((cy-y),2)) < config.percentHints.radius){
+                        return cc;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+
+        function mouseMoveListener(evt){
+            //http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
+            var rect = evt.toElement.getBoundingClientRect();
+            var x = evt.clientX - rect.left;
+            var y = evt.clientY - rect.top;
+
+            if (getHelperCircleByCoordinates(x,y) !== false){
+                canvas.style.cursor = 'pointer';
+            }
+            else {
+                canvas.style.cursor = 'default';
+            }
+        }
+
+        function clickListener(evt){
+            var rect = evt.toElement.getBoundingClientRect();
+            var x = evt.clientX - rect.left;
+            var y = evt.clientY - rect.top;
+
+            var helperCircleByCoordinates = getHelperCircleByCoordinates(x,y);
+            if (helperCircleByCoordinates !== false){
+                config.percentHints.clickHandler.onClick({
+                    id: helperCircleByCoordinates,
+                    data: data[helperCircleByCoordinates],
+                    helperCircleCenterX: helperCircleCoordinates[helperCircleByCoordinates].X,
+                    helperCircleCenterY: helperCircleCoordinates[helperCircleByCoordinates].Y,
+                    elementClickX: x,
+                    elementClickY: y,
+                    toElement: evt.toElement
+                });
+            }
+        }
 	}
 
 	var Line = function(data,config,ctx){
