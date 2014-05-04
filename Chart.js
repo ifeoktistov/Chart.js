@@ -704,7 +704,7 @@ window.Chart = function(context){
 			
 
 		}
-	}
+	};
 
 	var Pie = function(data,config,ctx){
 		var segmentTotal = 0;
@@ -752,10 +752,9 @@ window.Chart = function(context){
 
 	var Doughnut = function(data,config,ctx){
 		var segmentTotal = 0,
-            helperCircleCoordinates = {};
+            doughnutRadius = Min([height/2,width/2]) - 3;//Minus 3 pixels as padding round the edge.
 
-		//In case we have a canvas that is not a square. Minus 5 pixels as padding round the edge.
-		var doughnutRadius = Min([height/2,width/2]) - 3;
+
         if (config.percentHints.show){
             doughnutRadius-=config.percentHints.radius;
         }
@@ -766,13 +765,41 @@ window.Chart = function(context){
 			segmentTotal += data[i].value;
 		}
 
-        //click and mousemove handler
-        if (config.percentHints.show && config.percentHints.clickHandler.enable) {
-            config.percentHints.clickHandler.canvasWrapper.addEventListener('mousemove', mouseMoveListener, false);
-            config.percentHints.clickHandler.canvasWrapper.addEventListener('click', clickListener, false);
-        };
+        if (config.percentHints.show) {
+            var percentHints = {
+                circleCoordinates: {},
+                activeHint: false,
+                getHelperInfo: function(id){
+                    //check if isset
+                    return {
+                        id: id,
+                        data: data[id],
+                        helperCircleCenterX: Math.floor(percentHints.circleCoordinates[id].X),
+                        helperCircleCenterY: Math.floor(percentHints.circleCoordinates[id].Y)
+                    }
+                },
+                numberFontHeight: getFontHeight(config.percentHints.font, "9"),
+                hideActiveHint: function(e){
+                    config.percentHints.clickHandler.hideHintDetails(
+                        {
+                            helperDetails: percentHints.getHelperInfo(percentHints.activeHint),
+                            evt: e
+                        }
+                    );
+                    percentHints.activeHint = false;
+                    $(document).off('click.helperCircle');
+                    $(document).off('touchend.helperCircle');
+                }
+            };
 
-		animationLoop(config,null,drawPieSegments,ctx);
+            if (config.percentHints.clickHandler.enable) {//click and mousemove handler
+                config.percentHints.clickHandler.canvasWrapper.addEventListener('mousemove', mouseMoveListener, false);
+                config.percentHints.clickHandler.canvasWrapper.addEventListener('click', clickListener, false);
+                config.percentHints.clickHandler.canvasWrapper.addEventListener('touchend', clickListener, false);
+            }
+        }
+
+        animationLoop(config,null,drawPieSegments,ctx);
 
 
 		function drawPieSegments (animationDecimal){
@@ -781,6 +808,8 @@ window.Chart = function(context){
                 rotateAnimation = 1,
                 segmentAngle,
                 textPercent,
+                radius,
+                fontSize,
                 radiusMax,
                 radiusMin;
 
@@ -793,7 +822,28 @@ window.Chart = function(context){
 				}
 			}
 
-			for (var i=0; i<data.length; i++){
+
+            //draw chart text
+            if (config.chartTextFirstLine) {
+                ctx.fillStyle = "#000000";
+                ctx.font = config.chartTextFont;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                var hhh = getFontHeight(config.chartTextFont, config.chartTextFirstLine);
+
+                ctx.fillText(
+                    config.chartTextFirstLine,
+                    width/2,
+                    height/2 - hhh/2
+                );
+                ctx.fillText(
+                    config.chartTextSecondLine,
+                    width/2,
+                    height/2 + hhh/2
+                );
+            }
+
+            for (var i=0; i<data.length; i++){
 				segmentAngle = rotateAnimation * ((data[i].value/segmentTotal) * (Math.PI*2));
 
                 radiusMax = scaleAnimation * doughnutRadius;
@@ -821,38 +871,6 @@ window.Chart = function(context){
 				ctx.fillStyle = data[i].color;
 				ctx.fill();
 
-                if (config.percentHints.show){ // clear coordinates
-                    helperCircleCoordinates[i] = {};
-                }
-
-                if (config.percentHints.show && animationDecimal > (config.percentHints.startFromPercent/100)) {
-                    helperCircleCoordinates[i].X = radiusMax * Math.cos(cumulativeAngle + segmentAngle/2) + width/2;
-                    helperCircleCoordinates[i].Y = radiusMax * Math.sin(cumulativeAngle + segmentAngle/2) + height/2;
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.beginPath();
-                    ctx.arc(helperCircleCoordinates[i].X, helperCircleCoordinates[i].Y, config.percentHints.radius, 0, 2*Math.PI);
-                    ctx.strokeStyle = data[i].color;
-                    ctx.lineWidth = 3;
-                    //ctx.style.cursor = 'pointer';
-                    ctx.stroke();
-                    ctx.fill();
-
-                    //text
-                    //todo http://habrahabr.ru/post/140235/
-                    textPercent = Math.ceil((data[i].value/segmentTotal*animationDecimal)*100)+"%";
-                    ctx.fillStyle = data[i].color;
-                    ctx.font = config.percentHints.font;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(
-                        textPercent,
-                        helperCircleCoordinates[i].X,
-                        helperCircleCoordinates[i].Y
-                    );
-                }
-
-
                 if (config.percentageInnerShadow) {
                     // gray color
                     ctx.beginPath();
@@ -875,26 +893,75 @@ window.Chart = function(context){
                     );
 
                     ctx.closePath();
-                    ctx.fillStyle = "rgba(0,0,0,0.2)";
+                    ctx.fillStyle = "rgba(0,0,0,0.08)";
                     ctx.fill();
                 }
+
+
+                /* hints */
+                if (config.percentHints.show){
+                    percentHints.circleCoordinates[i] = {}; // clear coordinates if hints is not draw
+
+                    if (animationDecimal > (config.percentHints.startFromPercent/100)) {
+                        percentHints.circleCoordinates[i].X = radiusMax * Math.cos(cumulativeAngle + segmentAngle/2) + width/2;
+                        percentHints.circleCoordinates[i].Y = radiusMax * Math.sin(cumulativeAngle + segmentAngle/2) + height/2;
+
+                        //draw circle
+                        radius = config.percentHints.radius;
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.beginPath();
+                        ctx.arc(percentHints.circleCoordinates[i].X, percentHints.circleCoordinates[i].Y, radius, 0, 2*Math.PI);
+                        ctx.strokeStyle = data[i].color;
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+                        ctx.fill();
+
+                        //draw text
+                        textPercent = Math.round((data[i].value/segmentTotal*animationDecimal)*100);
+                        ctx.fillStyle = "#000000";
+                        ctx.font = config.percentHints.font;
+                        ctx.textAlign = "right";
+                        ctx.textBaseline = "top";
+
+                        var textTopPositionX = percentHints.circleCoordinates[i].X + (ctx.measureText(textPercent).width/2)-3;
+                        var textTopPositionY = percentHints.circleCoordinates[i].Y - (percentHints.numberFontHeight/2)+0.5;
+                        ctx.fillText(
+                            textPercent,
+                            textTopPositionX,
+                            textTopPositionY
+                        );
+
+                        //%
+                        ctx.font = 8 + "px " + config.percentHints.fontName;
+                        ctx.textAlign = "left";
+                        ctx.textBaseline = "top";
+                        ctx.fillText(
+                            "%",
+                            textTopPositionX,
+                            textTopPositionY+0.5
+                        );
+                    }
+                }
+
 
 				if(config.segmentShowStroke){
 					ctx.lineWidth = config.segmentStrokeWidth;
 					ctx.strokeStyle = config.segmentStrokeColor;
 					ctx.stroke();
 				}
+
 				cumulativeAngle += segmentAngle;
 			}			
 		}
 
+
         function getHelperCircleByCoordinates(x, y){
             var cx,cy;
 
-            for(var cc in helperCircleCoordinates){
-                if (typeof helperCircleCoordinates[cc].X != "undefined"){
-                    cx = helperCircleCoordinates[cc].X;
-                    cy = helperCircleCoordinates[cc].Y;
+            for(var cc in percentHints.circleCoordinates){
+                if (typeof percentHints.circleCoordinates[cc].X != "undefined"){
+                    cx = percentHints.circleCoordinates[cc].X;
+                    cy = percentHints.circleCoordinates[cc].Y;
 
                     if (Math.sqrt(Math.pow((cx-x),2) + Math.pow((cy-y),2)) < config.percentHints.radius){
                         return cc;
@@ -905,15 +972,48 @@ window.Chart = function(context){
             return false;
         }
 
+        function getEventData(evt){
+            var targetElement =
+                    (typeof evt.toElement != "undefined" && evt.toElement) ?
+                        evt.toElement :
+                        (typeof evt.relatedTarget != "undefined" && evt.relatedTarget) ?
+                            evt.relatedTarget :
+                            evt.target,
+                rect = targetElement.getBoundingClientRect(),
+                x = evt.clientX - rect.left,
+                y = evt.clientY - rect.top;
+
+            return {
+                targetElement: targetElement,
+                x: x,
+                y: y
+            };
+        }
 
         function mouseMoveListener(evt){
             //http://www.html5canvastutorials.com/advanced/html5-canvas-mouse-coordinates/
-            var rect = evt.toElement.getBoundingClientRect();
-            var x = evt.clientX - rect.left;
-            var y = evt.clientY - rect.top;
+            var clickDetails,
+                eventData = getEventData(evt),
+                x = eventData.x,
+                y = eventData.y,
+                helperCircleByCoordinates = getHelperCircleByCoordinates(x,y);
 
-            if (getHelperCircleByCoordinates(x,y) !== false){
+            if (helperCircleByCoordinates !== false){
                 canvas.style.cursor = 'pointer';
+                clickDetails = {
+                    elementClickX: x,
+                    elementClickY: y
+                };
+
+                if (config.percentHints.clickHandler.onHoverHint) {
+                    config.percentHints.clickHandler.onHoverHint(
+                        {
+                            helperDetails: percentHints.getHelperInfo(helperCircleByCoordinates),
+                            clickDetails: clickDetails,
+                            evt: evt
+                        }
+                    );
+                }
             }
             else {
                 canvas.style.cursor = 'default';
@@ -921,24 +1021,79 @@ window.Chart = function(context){
         }
 
         function clickListener(evt){
-            var rect = evt.toElement.getBoundingClientRect();
-            var x = evt.clientX - rect.left;
-            var y = evt.clientY - rect.top;
+            var clickDetails,
+                eventData = getEventData(evt),
+                x = eventData.x,
+                y = eventData.y,
+                helperCircleByCoordinates = getHelperCircleByCoordinates(x,y);
 
-            var helperCircleByCoordinates = getHelperCircleByCoordinates(x,y);
             if (helperCircleByCoordinates !== false){
-                config.percentHints.clickHandler.onClick({
-                    id: helperCircleByCoordinates,
-                    data: data[helperCircleByCoordinates],
-                    helperCircleCenterX: helperCircleCoordinates[helperCircleByCoordinates].X,
-                    helperCircleCenterY: helperCircleCoordinates[helperCircleByCoordinates].Y,
+                clickDetails = {
                     elementClickX: x,
-                    elementClickY: y,
-                    toElement: evt.toElement
-                });
+                    elementClickY: y
+                };
+
+                if (config.percentHints.clickHandler.onClickHint) {
+                    config.percentHints.clickHandler.onClickHint(
+                        {
+                            helperDetails: percentHints.getHelperInfo(helperCircleByCoordinates),
+                            clickDetails: clickDetails,
+                            evt: evt
+                        }
+                    );
+                }
+
+                if (helperCircleByCoordinates !== percentHints.activeHint) { //open new popup
+                    if (percentHints.activeHint !== false){//close old
+                        percentHints.hideActiveHint(evt);
+                    }
+
+                    percentHints.activeHint = helperCircleByCoordinates;
+
+                    var onClickHandlerFunction = function(e) {//register click handler
+                        var eventData = getEventData(e);
+                        //debugger;
+
+                        if (
+                            eventData.targetElement == config.percentHints.clickHandler.canvasWrapper || //ignore click to canvas
+                            eventData.targetElement.className == config.percentHints.clickHandler.ignoreHideHintClass ||
+                            $(eventData.targetElement).closest('.' + config.percentHints.clickHandler.ignoreHideHintClass).length
+                        ){
+                            return false;
+                        }
+                        percentHints.hideActiveHint(e);
+                    };
+
+                    $(document).on('click.helperCircle', onClickHandlerFunction);
+                    $(document).on('touchend.helperCircle', onClickHandlerFunction);
+
+                    //show popup
+                    config.percentHints.clickHandler.showHintDetails(
+                        {
+                            helperDetails: percentHints.getHelperInfo(helperCircleByCoordinates),
+                            clickDetails: clickDetails,
+                            evt: evt
+                        }
+                    );
+                }
+            }
+            else if (percentHints.activeHint !== false){
+                percentHints.hideActiveHint(evt);
             }
         }
-	}
+
+        function getFontHeight(font, text) {
+            var parent = document.createElement("span");
+            parent.innerHTML = text;
+            parent.appendChild(document.createTextNode("height"));
+            document.body.appendChild(parent);
+            parent.style.cssText = "font: " + font + ";margin:0;padding:0;";
+            var height = parent.offsetHeight;
+            var width = parent.offsetWidth;
+            document.body.removeChild(parent);
+            return height;
+        }
+	};
 
 	var Line = function(data,config,ctx){
 		var maxSize, scaleHop, calculatedScale, labelHeight, scaleHeight, valueBounds, labelTemplateString, valueHop,widestXLabel, xAxisLength,yAxisPosX,xAxisPosY, rotateLabels = 0;
