@@ -296,6 +296,27 @@ window.Chart = function(context){
 		
 	};
 
+	this.Percent = function(data,options){
+
+		chart.Percent.defaults = {
+			segmentShowStroke : true,
+			segmentStrokeColor : "#fff",
+			segmentStrokeWidth : 2,
+			percentageInnerCutout : 50,
+			animation : true,
+			animationSteps : 100,
+			animationEasing : "easeOutBounce",
+			animateRotate : true,
+			animateScale : false,
+			onAnimationComplete : null,
+            percentageInnerShadow : 0
+		};
+
+		var config = (options)? mergeChartConfig(chart.Percent.defaults,options) : chart.Percent.defaults;
+
+		return new Percent(data,config,context);
+	};
+
 	this.Line = function(data,options){
 	
 		chart.Line.defaults = {
@@ -1089,7 +1110,178 @@ window.Chart = function(context){
             document.body.appendChild(parent);
             parent.style.cssText = "font: " + font + ";margin:0;padding:0;";
             var height = parent.offsetHeight;
-            var width = parent.offsetWidth;
+            document.body.removeChild(parent);
+            return height;
+        }
+	};
+
+
+	var Percent = function(data,config,ctx){
+		var segmentTotal = 0,
+            doughnutRadius = Min([height/2,width/2]) - 3;//Minus 3 pixels as padding round the edge.
+
+		var cutoutRadius = doughnutRadius * (config.percentageInnerCutout/100);
+
+        animationLoop(config,null,drawPieSegments,ctx);
+
+		function drawPieSegments (animationDecimal){
+                var cumulativeAngle = -Math.PI/2,
+                scaleAnimation = 1,
+                rotateAnimation = 1,
+                deltaAngle = (Math.PI*2) / 128,
+                deltaSegment = 0,
+                workaroundSpiceBorder = (Math.PI*2) / 600, // 0.010471975511965976
+                percentSegment,
+                segmentAngle,
+                fillColor,
+                radiusMax,
+                radiusMin;
+
+			if (config.animation) {
+				if (config.animateScale) {
+					scaleAnimation = animationDecimal;
+				}
+				if (config.animateRotate){
+					rotateAnimation = animationDecimal;
+				}
+			}
+
+            radiusMax = scaleAnimation * doughnutRadius;
+            radiusMin = scaleAnimation * cutoutRadius;
+            percentSegment = rotateAnimation * ((data.percent/100) * (Math.PI*2));
+
+            while(percentSegment > 0) {
+                if (percentSegment > deltaAngle) {
+                    deltaSegment = deltaAngle + 0;
+                }
+                else {
+                    deltaSegment = percentSegment;
+                }
+
+                fillColor = getHSLColorForPercentSegment( (cumulativeAngle + Math.PI/2) / (Math.PI * 2) );
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(width/2, height/2, radiusMin, cumulativeAngle - workaroundSpiceBorder, cumulativeAngle + deltaSegment , false);
+                ctx.arc(width/2, height/2, radiusMax, cumulativeAngle + deltaSegment, cumulativeAngle - workaroundSpiceBorder, true);
+                ctx.closePath();
+                ctx.fillStyle = 'hsla(' + fillColor.h +  ', ' + fillColor.s +  '%, ' + fillColor.l +  '%, 1)';
+                ctx.fill();
+                ctx.restore();
+
+                cumulativeAngle += deltaSegment;
+                percentSegment -= deltaSegment;
+            }
+            
+            ctx.beginPath();
+            ctx.arc(
+                width/2,
+                height/2,
+                radiusMin,
+                cumulativeAngle - workaroundSpiceBorder,
+                Math.PI * 1.5, //end of circle
+                false
+            );
+            ctx.arc(
+                width/2,
+                height/2,
+                radiusMax,
+                Math.PI * 1.5, //end of circle
+                cumulativeAngle - workaroundSpiceBorder,
+                true
+            );
+            ctx.closePath();
+            ctx.fillStyle = "#cccccc";
+            ctx.fill();
+
+
+            if (config.percentageInnerShadow) {
+                ctx.beginPath();
+                ctx.arc(
+                    width/2,
+                    height/2,
+                    radiusMin + ((radiusMax-radiusMin) * (config.percentageInnerShadow/100)),
+                    0,
+                    2*Math.PI,
+                    false
+                );
+
+                ctx.arc(
+                    width/2,
+                    height/2,
+                    radiusMin,
+                    0,
+                    2*Math.PI,
+                    true
+                );
+
+                ctx.closePath();
+                ctx.fillStyle = "rgba(0,0,0,0.08)";
+                ctx.fill();
+            }
+
+
+            //draw chart text
+            if (config.chartTextFirstLine) {
+                ctx.fillStyle = "#000000";
+                ctx.font = config.chartTextFont;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                var hhh = getFontHeight(config.chartTextFont, config.chartTextFirstLine);
+
+                ctx.fillText(
+                    config.chartTextFirstLine,
+                    width/2,
+                    height/2 - hhh/2
+                );
+                ctx.fillText(
+                    config.chartTextSecondLine,
+                    width/2,
+                    height/2 + hhh/2
+                );
+            }
+		}
+
+        /**
+         *
+         * @param decimalPercent from 0 - 0% to 1 - 100%
+         * @returns {{h: number, s: number, l: number}}
+         */
+        function getHSLColorForPercentSegment(decimalPercent){
+            /*var startHSL = {
+                h: 198,
+                s: (240/240)*100,
+                l: (120/240)*100
+            };
+            var endHSL = {
+                h: 360,
+                s: (240/240)*100,
+                l: (120/240)*100
+            };*/
+            var startHSL = {
+                h: 122,
+                s: 84,
+                l: 58
+            };
+            var endHSL = {
+                h: 114,
+                s: 67,
+                l: 45
+            };
+
+            return {
+                h: Math.floor(startHSL.h + (endHSL.h - startHSL.h) * decimalPercent),
+                s: Math.floor(startHSL.s + (endHSL.s - startHSL.s) * decimalPercent),
+                l: Math.floor(startHSL.l + (endHSL.l - startHSL.l) * decimalPercent)
+            };
+        }
+
+        function getFontHeight(font, text) {
+            var parent = document.createElement("span");
+            parent.innerHTML = text;
+            parent.appendChild(document.createTextNode("height"));
+            document.body.appendChild(parent);
+            parent.style.cssText = "font: " + font + ";margin:0;padding:0;";
+            var height = parent.offsetHeight;
             document.body.removeChild(parent);
             return height;
         }
