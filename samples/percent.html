@@ -1,188 +1,150 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Percent Chart</title>
-		<script src="../Chart.js"></script>
-        <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
-		<meta name = "viewport" content = "initial-scale = 1, user-scalable = no">
-		<style>
-            html,body {
-                height: 100%;
-            }
+<head>
+    <title>Percent Chart</title>
+    <script src="../Chart.js"></script>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+    <meta name="viewport" content="initial-scale = 1, user-scalable = no">
+    <style>
+        html, body {
+            height: 100%;
+        }
 
-			canvas{
-			}
-            @font-face {
-                font-family: 'museo_sans_cyrl500';
-                src: url('museosanscyrl-500.eot');
-                src: url('museosanscyrl-500.eot?#iefix') format('embedded-opentype'),
-                url('museosanscyrl-500.woff') format('woff'),
-                url('museosanscyrl-500.ttf') format('truetype'),
-                url('museosanscyrl-500.svg#museo_sans_cyrl500') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-		</style>
-	</head>
-	<body>
-        <canvas id="canvas" height="90" width="90"></canvas>
-        <canvas id="canvas-1" height="232" width="232"></canvas>
-        <canvas id="canvas-2" height="90" width="90"></canvas>
-        <canvas id="canvas-3" height="90" width="90"></canvas>
-        <canvas id="canvas-4" height="90" width="90"></canvas>
-        <canvas id="canvas-5" height="90" width="90"></canvas>
-        <canvas id="canvas-6" height="90" width="90"></canvas>
+        canvas {
+        }
 
-        <script>
+        @font-face {
+            font-family: 'museo_sans_cyrl500';
+            src: url('museosanscyrl-500.eot');
+            src: url('museosanscyrl-500.eot?#iefix') format('embedded-opentype'),
+            url('museosanscyrl-500.woff') format('woff'),
+            url('museosanscyrl-500.ttf') format('truetype'),
+            url('museosanscyrl-500.svg#museo_sans_cyrl500') format('svg');
+            font-weight: normal;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+<pre>
+defaults = {
+        fontname: "museo_sans_cyrl500",
+        fontsize: 24,
+        percent: 0,
+        animation: false,
+        starthsl: "80,60,50",
+        endhsl: "360,90,80",
+        innercutout: 66,
+    };
+</pre>
 
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
+<hr/>
 
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 0
-                        },
+<pre>
+    data-percent="95"
+    data-animation="true"
+</pre>
+<canvas class="_chart_percent"
+        height="96"
+        width="96"
+        data-percent="95"
+        data-animation="true"></canvas>
+<hr/>
+
+
+
+<pre>
+    data-percent="100"
+    data-fontsize="42"
+    data-innercutout="72"
+    data-starthsl="122,84,58"
+    data-endhsl="114,67,45"
+    data-animation="false"
+</pre>
+<canvas class="_chart_percent"
+        height="238"
+        width="238"
+        data-percent="100"
+        data-fontsize="42"
+        data-innercutout="72"
+        data-starthsl="122,84,58"
+        data-endhsl="114,67,45"
+        data-animation="false"></canvas>
+<hr/>
+
+
+
+<pre>
+    data-percent="100"
+    data-starthsl="198,100,50"
+    data-endhsl="360,100,50"
+    data-animation="true"
+</pre>
+<canvas class="_chart_percent"
+        height="96"
+        width="96"
+        data-percent="100"
+        data-starthsl="198,100,50"
+        data-endhsl="360,100,50"
+        data-animation="true"></canvas>
+<hr/>
+
+
+
+<pre>
+    data-percent="76"
+    data-starthsl="198,100,50"
+    data-endhsl="360,100,50"
+    data-fontsize="16"
+    data-animation="true"
+</pre>
+<canvas class="_chart_percent"
+        height="70"
+        width="70"
+        data-percent="76"
+        data-starthsl="198,100,50"
+        data-endhsl="360,100,50"
+        data-fontsize="16"
+        data-animation="true"></canvas>
+<hr/>
+
+
+
+<script src="../jquery.v1.10.2.js"></script>
+<script>
+    var percentChart = {};
+    percentChart.defaults = {
+        fontname: "museo_sans_cyrl500",
+        fontsize: 24,
+        percent: 0,
+        animation: false,
+        starthsl: "80,60,50",
+        endhsl: "360,90,80",
+        innercutout: 66,
+    };
+    percentChart.getDataAttr = function(el, param) {
+        return (typeof $(el).data(param) != "undefined") ?
+                $(el).data(param) :
+                percentChart.defaults[param];
+    };
+
+    jQuery(document).ready(function ($) {
+        $('._chart_percent').each(function (i, el) {
+            new Chart(el.getContext("2d")).Percent(
                     {
-                        chartTextFirstLine: "0",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-             animation: true
-                    }
-                );
-            })();
-
-
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-1");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 100
-                        },
+                        percent: percentChart.getDataAttr(el,'percent')
+                    },
                     {
-                        chartTextFirstLine: "100",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-             animation: true
+                        chartTextFont: percentChart.getDataAttr(el,'fontsize') + "px " + percentChart.getDataAttr(el,'fontname'),
+                        animation: percentChart.getDataAttr(el,'animation'),
+                        startHSL: percentChart.getDataAttr(el,'starthsl'),
+                        endHSL: percentChart.getDataAttr(el,'endhsl'),
+                        percentageInnerCutout: percentChart.getDataAttr(el,'innercutout')
                     }
-                );
-            })();
+            );
+        });
+    });
 
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-2");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 66
-                        },
-                    {
-                        chartTextFirstLine: "66",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-             animation: true
-                    }
-                );
-            })();
-
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-3");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 51
-                        },
-                    {
-                        chartTextFirstLine: "51",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-             animation: true
-                    }
-                );
-            })();
-
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-4");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 50
-                        },
-                    {
-                        chartTextFirstLine: "50",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-                        animation: true
-                    }
-                );
-            })();
-
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-5");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 1
-                        },
-                    {
-                        chartTextFirstLine: "1",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-                        animation: true
-                    }
-                );
-            })();
-
-            (function(){
-                var percentChart = {};
-                percentChart.canvasWrapper = document.getElementById("canvas-6");
-                percentChart.el = percentChart.canvasWrapper.getContext("2d");
-
-                percentChart.chart = new Chart(percentChart.el).Percent(
-                        {
-                            percent: 99
-                        },
-                    {
-                        chartTextFirstLine: "99",
-                        chartTextSecondLine: "percent",
-                        chartTextFont: "9px museo_sans_cyrl500",
-                        percentageInnerCutout: 66,
-                        percentageInnerShadow: 33,
-                        segmentShowStroke: false,
-                        animation: true
-                    }
-                );
-            })();
-        </script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-	</body>
+</script>
+</body>
 </html>

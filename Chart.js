@@ -299,17 +299,14 @@ window.Chart = function(context){
 	this.Percent = function(data,options){
 
 		chart.Percent.defaults = {
-			segmentShowStroke : true,
-			segmentStrokeColor : "#fff",
-			segmentStrokeWidth : 2,
-			percentageInnerCutout : 50,
-			animation : true,
-			animationSteps : 100,
-			animationEasing : "easeOutBounce",
-			animateRotate : true,
-			animateScale : false,
-			onAnimationComplete : null,
-            percentageInnerShadow : 0
+            animation : true,
+            animationSteps : 100,
+            animationEasing : "easeOutBounce",
+            animateRotate : true,
+            animateScale : false,
+            percentageInnerCutout: 66,
+            percentageInnerShadow: 33,
+            onAnimationComplete : null
 		};
 
 		var config = (options)? mergeChartConfig(chart.Percent.defaults,options) : chart.Percent.defaults;
@@ -1117,9 +1114,7 @@ window.Chart = function(context){
 
 
 	var Percent = function(data,config,ctx){
-		var segmentTotal = 0,
-            doughnutRadius = Min([height/2,width/2]) - 3;//Minus 3 pixels as padding round the edge.
-
+		var doughnutRadius = Min([height/2,width/2]) - 3;//Minus 3 pixels as padding round the edge.
 		var cutoutRadius = doughnutRadius * (config.percentageInnerCutout/100);
 
         animationLoop(config,null,drawPieSegments,ctx);
@@ -1132,7 +1127,6 @@ window.Chart = function(context){
                 deltaSegment = 0,
                 workaroundSpiceBorder = (Math.PI*2) / 600, // 0.010471975511965976
                 percentSegment,
-                segmentAngle,
                 fillColor,
                 radiusMax,
                 radiusMin;
@@ -1190,7 +1184,7 @@ window.Chart = function(context){
                 true
             );
             ctx.closePath();
-            ctx.fillStyle = "#cccccc";
+            ctx.fillStyle = "#EBECEE";
             ctx.fill();
 
 
@@ -1220,25 +1214,17 @@ window.Chart = function(context){
             }
 
 
-            //draw chart text
-            if (config.chartTextFirstLine) {
-                ctx.fillStyle = "#000000";
-                ctx.font = config.chartTextFont;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                var hhh = getFontHeight(config.chartTextFont, config.chartTextFirstLine);
+            //draw percent text
+            ctx.fillStyle = "#000000";
+            ctx.font = config.chartTextFont;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
-                ctx.fillText(
-                    config.chartTextFirstLine,
-                    width/2,
-                    height/2 - hhh/2
-                );
-                ctx.fillText(
-                    config.chartTextSecondLine,
-                    width/2,
-                    height/2 + hhh/2
-                );
-            }
+            ctx.fillText(
+                Math.round(data.percent * animationDecimal),
+                width/2,
+                height/2
+            );
 		}
 
         /**
@@ -1247,31 +1233,13 @@ window.Chart = function(context){
          * @returns {{h: number, s: number, l: number}}
          */
         function getHSLColorForPercentSegment(decimalPercent){
-            /*var startHSL = {
-                h: 198,
-                s: (240/240)*100,
-                l: (120/240)*100
-            };
-            var endHSL = {
-                h: 360,
-                s: (240/240)*100,
-                l: (120/240)*100
-            };*/
-            var startHSL = {
-                h: 122,
-                s: 84,
-                l: 58
-            };
-            var endHSL = {
-                h: 114,
-                s: 67,
-                l: 45
-            };
+            var startHSL = config.startHSL.split(",");
+            var endHSL = config.endHSL.split(",");
 
             return {
-                h: Math.floor(startHSL.h + (endHSL.h - startHSL.h) * decimalPercent),
-                s: Math.floor(startHSL.s + (endHSL.s - startHSL.s) * decimalPercent),
-                l: Math.floor(startHSL.l + (endHSL.l - startHSL.l) * decimalPercent)
+                h: Math.floor(Number(startHSL[0]) + (Number(endHSL[0]) - Number(startHSL[0])) * decimalPercent),
+                s: Math.floor(Number(startHSL[1]) + (Number(endHSL[1]) - Number(startHSL[1])) * decimalPercent),
+                l: Math.floor(Number(startHSL[2]) + (Number(endHSL[2]) - Number(startHSL[2])) * decimalPercent)
             };
         }
 

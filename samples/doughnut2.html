@@ -1,123 +1,181 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Doughnut Chart</title>
-		<script src="../Chart.js"></script>
-        <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
-		<meta name = "viewport" content = "initial-scale = 1, user-scalable = no">
-		<style>
-            html,body {
-                height: 100%;
-            }
+<head>
+    <title>Doughnut Chart</title>
+    <script src="../Chart.js"></script>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+    <meta name="viewport" content="initial-scale = 1, user-scalable = no">
+    <style>
+        html, body {
+            height: 100%;
+        }
 
-			canvas{
-			}
-            @font-face {
-                font-family: 'museo_sans_cyrl500';
-                src: url('museosanscyrl-500.eot');
-                src: url('museosanscyrl-500.eot?#iefix') format('embedded-opentype'),
-                url('museosanscyrl-500.woff') format('woff'),
-                url('museosanscyrl-500.ttf') format('truetype'),
-                url('museosanscyrl-500.svg#museo_sans_cyrl500') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
+        canvas {
+        }
 
-            .doughnut{
-                position: relative;
-                width: 260px;
-                height: 260px;
-            }
-            .hintDetails-popup{
-                position: absolute;
-                display: none;
-                background: #f2265d;
-                height: 50px;
-                width: 160px;
-            }
-		</style>
-	</head>
-	<body>
-        <div class="doughnut">
-            <canvas id="canvas" height="260" width="260"></canvas>
-            <div class="hintDetails-popup"> some popup text <span>inner span</span> </div>
+        @font-face {
+            font-family: 'museo_sans_cyrl500';
+            src: url('museosanscyrl-500.eot');
+            src: url('museosanscyrl-500.eot?#iefix') format('embedded-opentype'),
+            url('museosanscyrl-500.woff') format('woff'),
+            url('museosanscyrl-500.ttf') format('truetype'),
+            url('museosanscyrl-500.svg#museo_sans_cyrl500') format('svg');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        .doughnut {
+            position: relative;
+            width: 260px;
+            height: 260px;
+        }
+
+        .doughnut-popup {
+            position: absolute;
+            display: none;
+            background: #f2265d;
+            height: 50px;
+            width: 160px;
+        }
+    </style>
+</head>
+<body>
+<div class="doughnut">
+    <canvas id="canvas" height="260" width="260"></canvas>
+    <script id="doughnut-popup" type="text/x-jquery-tmpl">
+        <div class="doughnut-popup pulse">
+            <h4>${cityName}</h4>
+
+            <div class="formula__box first">
+                <i class="icon-user-blue"></i>
+                <div class="formula___text">
+                    <h5>${friends}</h5>
+                    <span>Друга</span>
+                </div>
+            </div>
+            <div class="formula__box">
+                <i class="icon-followers-rss"></i>
+                <div class="formula___text">
+                    <h5>${subscribers}</h5>
+                    <span>Подписчика</span>
+                </div>
+            </div>
         </div>
+    </script>
+</div>
 
-        <script>
-            var doughnutData = [
-                    {
-                        value: 17,
-                        color:"#faba18"
-                    },
-                    {
-                        value : 15,
-                        color : "#2acd6f"
-                    },
-                    {
-                        value : 38,
-                        color : "#2b7ec9"
-                    },
-                    {
-                        value : 25,
-                        color : "#e93b87"
-                    },
-                    {
-                        value : 3,
-                        color : "#8341c4"
-                    },
-                    {
-                        value : 2,
-                        color : "#ebecee"
-                    }
-                ];
 
-            var doughnutChart = {};
-            doughnutChart.canvasWrapper = document.getElementById("canvas");
-            doughnutChart.el = doughnutChart.canvasWrapper.getContext("2d");
-            doughnutChart.percentHintsRadius = 12;
-            doughnutChart.hideHintDetails = function(data){
-                $('#hintDetails-'+data.helperDetails.id).remove();
-            };
-            doughnutChart.showHintDetails = function(data){
-                var newPopUP = $('.hintDetails-popup').clone();
-                $('.doughnut').append(newPopUP);
-                newPopUP.attr('id', 'hintDetails-'+data.helperDetails.id);
+<script src="../jquery.v1.10.2.js"></script>
+<script src="../jquery.tmpl.min.js"></script>
 
-                var radius = doughnutChart.percentHintsRadius + 3; //3px = border
-                var top = data.helperDetails.helperCircleCenterY - newPopUP.height()/2;
-                var left = data.helperDetails.helperCircleCenterX + radius;
-                newPopUP.css('left', left);
-                newPopUP.css('top', top);
-                newPopUP.css('display', 'block');
-            };
+<script>
+    var doughnutData = [
+        {
+            value: 17,
+            color: "#faba18",
+            template : {
+                cityName: 'Львів',
+                friends: 48115,
+                subscribers: 841,
+            }
+        },
+        {
+            value: 15,
+            color: "#2acd6f",
+            template : {
+                cityName: 'Київ',
+                friends: 15201,
+                subscribers: 150,
+            }
+        },
+        {
+            value: 38,
+            color: "#2b7ec9",
+            template : {
+                cityName: 'Одеса',
+                friends: 85123,
+                subscribers: 321,
+            }
+        },
+        {
+            value: 25,
+            color: "#e93b87",
+            template : {
+                cityName: 'Хуст',
+                friends: 32141,
+                subscribers: 889,
+            }
+        },
+        {
+            value: 3,
+            color: "#8341c4",
+            template : {
+                cityName: 'Вінниця',
+                friends: 5412,
+                subscribers: 25,
+            }
+        },
+        {
+            value: 2,
+            color: "#ebecee",
+            template : {
+                cityName: 'Донецьк',
+                friends: 152,
+                subscribers: 61,
+            }
+        }
+    ];
 
-            doughnutChart.chart = new Chart(doughnutChart.el).Doughnut(
-                doughnutData,
-                {
-                    chartTextFirstLine: "Топ 5",
-                    chartTextSecondLine: "городов",
-                    chartTextFont: "16px museo_sans_cyrl500",
-                    percentageInnerCutout: 66,
-                    percentageInnerShadow: 33,
-                    segmentShowStroke: false,
-                    percentHints: {
-                        show: true,
-                        startFromPercent: 33,
-                        radius: doughnutChart.percentHintsRadius,
-                        font: "12px museo_sans_cyrl500",
-                        clickHandler: {
-                            enable: true,
-                            canvasWrapper: doughnutChart.canvasWrapper,
-                            ignoreHideHintClass: 'hintDetails-popup',
-                            onClickHint: false,
-                            onHoverHint: false,
-                            showHintDetails: doughnutChart.showHintDetails,
-                            hideHintDetails: doughnutChart.hideHintDetails
-                        }
+    var doughnutChart = {};
+    doughnutChart.canvasWrapper = document.getElementById("canvas");
+    doughnutChart.el = doughnutChart.canvasWrapper.getContext("2d");
+    doughnutChart.percentHintsRadius = 12;
+    doughnutChart.hideHintDetails = function (data) {
+        $('#hintDetails-' + data.helperDetails.id).remove();
+    };
+    doughnutChart.showHintDetails = function (data) {
+        console.log(data);
+        console.log(data.helperDetails.data.template);
+        var newPopUP = $.tmpl( $('#doughnut-popup'), data.helperDetails.data.template);
+
+        $('.doughnut').append(newPopUP);
+        newPopUP.attr('id', 'hintDetails-' + data.helperDetails.id);
+
+        var radius = doughnutChart.percentHintsRadius + 3; //3px = border
+        var top = data.helperDetails.helperCircleCenterY - newPopUP.height() / 2;
+        var left = data.helperDetails.helperCircleCenterX + radius;
+        newPopUP.css('left', left);
+        newPopUP.css('top', top);
+        newPopUP.css('display', 'block');
+    };
+
+    doughnutChart.chart = new Chart(doughnutChart.el).Doughnut(
+            doughnutData,
+            {
+                chartTextFirstLine: "Топ 5",
+                chartTextSecondLine: "городов",
+                chartTextFont: "16px museo_sans_cyrl500",
+                percentageInnerCutout: 66,
+                percentageInnerShadow: 33,
+                segmentShowStroke: false,
+                percentHints: {
+                    show: true,
+                    startFromPercent: 33,
+                    radius: doughnutChart.percentHintsRadius,
+                    font: "12px museo_sans_cyrl500",
+                    clickHandler: {
+                        enable: true,
+                        canvasWrapper: doughnutChart.canvasWrapper,
+                        ignoreHideHintClass: 'doughnut-popup',
+                        onClickHint: false,
+                        onHoverHint: false,
+                        showHintDetails: doughnutChart.showHintDetails,
+                        hideHintDetails: doughnutChart.hideHintDetails
                     }
                 }
-            );
-        </script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-	</body>
+            }
+    );
+</script>
+<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>-->
+</body>
 </html>
